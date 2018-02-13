@@ -41,10 +41,26 @@
         function processVideo() {
           let begin = Date.now();
           cap.read(src);
-          src.copyTo(dst);
-          let thresh = preprocessImage(dst);
 
-          cv.imshow('canvasOutput', dst);
+          let thresh = preprocessImage(src);
+
+          let contours = new cv.MatVector();
+          let hierarchy = new cv.Mat();
+          cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+
+          var largestContour = undefined;
+          var largestArea = 0;
+          for (let i = 0; i < contours.size(); ++i) {
+            let c = contours.get(i);
+            var area = cv.contourArea(c, false);
+            if (area > largestArea) {
+              largestArea = area;
+              largestContour = c;
+            }
+          }
+          console.log(largestContour);
+
+          cv.imshow('canvasOutput', thresh);
 
           // schedule next one.
           let delay = 1000/FPS - (Date.now() - begin);
@@ -71,7 +87,6 @@
           // than that. This allows the threshold to adapt to the lighting conditions.
           // let a = new nj.array(image.data);
           let bkg_level = gray.data[(gray.cols / 25) * (gray.rows / 2)];
-          console.log(bkg_level);
           let thresh_level = bkg_level + BKG_THRESH;
 
           if(white = true && thresh_level < 110) {
