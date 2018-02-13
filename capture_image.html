@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Hello OpenCV.js</title>
+  </head>
+  <body>
+    <video id="videoInput" width="800" height="600"></video>
+    <canvas id="canvasOutput"></canvas>
+    <script type="text/javascript">
+      function onOpenCvReady() {
+        const IM_WIDTH = 800
+        const IM_HEIGHT = 600 
+
+        const RANK_WIDTH = 400;
+        const RANK_HEIGHT = 580;
+
+        const SUIT_WIDTH = 70;
+        const SUIT_HEIGHT = 100;
+
+        // Adaptive threshold levels
+        const BKG_THRESH = 60
+        const CARD_THRESH = 30
+
+        const FPS = 30;
+
+        let video = document.getElementById("videoInput"); 
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(function(err) {
+                console.log("An error occured! " + err);
+            });
+
+        let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+        let dst = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+        let cap = new cv.VideoCapture(video);
+
+        function processVideo() {
+          let begin = Date.now();
+          cap.read(src);
+          src.copyTo(dst);
+          let thresh = preprocessImage(dst);
+
+          cv.imshow('canvasOutput', dst);
+
+          // schedule next one.
+          let delay = 1000/FPS - (Date.now() - begin);
+          setTimeout(processVideo, delay);
+          }
+        setTimeout(processVideo, 0);
+
+        function preprocessImage(image, white = false) {
+          let gray = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+          let blur = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+          let thresh = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+          cv.cvtColor(image, dst, cv.COLOR_BGR2GRAY);
+          cv.bitwise_not(dst, gray);
+          cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0, 0, cv.BORDER_DEFAULT);
+
+          // The best threshold level depends on the ambient lighting conditions.
+          // For bright lighting, a high threshold must be used to isolate the cards
+          // from the background. For dim lighting, a low threshold must be used.
+          // To make the card detector independent of lighting conditions, the
+          // following adaptive threshold method is used.
+          
+          // A background pixel in the center top of the image is sampled to determine
+          // its intensity. The adaptive threshold is set at 50 (THRESH_ADDER) higher
+          // than that. This allows the threshold to adapt to the lighting conditions.
+          // let a = new nj.array(image.data);
+          let bkg_level = gray.data[(gray.cols / 25) * (gray.rows / 2)];
+          console.log(bkg_level);
+          let thresh_level = bkg_level + BKG_THRESH;
+
+          if(white = true && thresh_level < 110) {
+            thresh_level = 110;
+          }
+
+          cv.threshold(blur, thresh, thresh_level, 255, cv.THRESH_BINARY);
+          return thresh
+        }
+
+      }
+    </script>
+    <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+    <script src="bower_components/numjs/dist/numjs.min.js"></script>
+  </body>
+</html>
