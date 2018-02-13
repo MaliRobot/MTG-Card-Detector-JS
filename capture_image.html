@@ -48,17 +48,31 @@
           let hierarchy = new cv.Mat();
           cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
 
-          var largestContour = undefined;
+          var largestContour = null;
           var largestArea = 0;
           for (let i = 0; i < contours.size(); ++i) {
             let c = contours.get(i);
-            var area = cv.contourArea(c, false);
+            let area = cv.contourArea(c, false);
             if (area > largestArea) {
               largestArea = area;
               largestContour = c;
             }
           }
-          console.log(largestContour);
+
+          if (largestContour != null) {
+            let peri = cv.arcLength(largestContour,true);
+            let approx = new cv.Mat();
+            cv.approxPolyDP(largestContour, approx, 0.01*peri,true);
+            let pts = nj.float32(approx);
+
+            let rect = cv.boundingRect(largestContour);
+            let x = rect.x;
+            let y = rect.y;
+            let width = rect.width;
+            let height = rect.height;
+
+            let warp = flattener(src, pts, width, height);
+          }
 
           cv.imshow('canvasOutput', thresh);
 
@@ -94,7 +108,16 @@
           }
 
           cv.threshold(blur, thresh, thresh_level, 255, cv.THRESH_BINARY);
-          return thresh
+          return thresh;
+        }
+
+        function flattener(image, pts, w, h) {
+          // Flattens an image of a card into a top-down 200x300 perspective.
+          // Returns the flattened, re-sized, grayed image.
+          // See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
+          let temp_rect = nj.zeros((4,2), 'float32');
+          let s = nj.sum(pts, axis=2);
+          console.log(s);
         }
 
       }
