@@ -63,8 +63,7 @@
             let peri = cv.arcLength(largestContour,true);
             let approx = new cv.Mat();
             cv.approxPolyDP(largestContour, approx, 0.01*peri,true);
-            let pts = nj.float32(approx);
-
+            let pts = nj.array(approx.data32S, 'float32');
             let rect = cv.boundingRect(largestContour);
             let x = rect.x;
             let y = rect.y;
@@ -116,7 +115,7 @@
           // Returns the flattened, re-sized, grayed image.
           // See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
           let temp_rect = nj.zeros((4,2), 'float32');
-          let s = nj.sum(pts, axis=2);
+          let s = pts;
           console.log(s);
         }
 
