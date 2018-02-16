@@ -69,15 +69,31 @@
             for(let i = 0; i < points.length; i += 2) {
               pts_arr.push([[points[i], points[i+1]]]);
             }
+
             let pts = nj.array(approx.data32S, 'float32');
-            console.log(pts_arr);
             let rect = cv.boundingRect(largestContour);
-            let x = rect.x;
-            let y = rect.y;
+
             let width = rect.width;
             let height = rect.height;
-
             let warp = flattener(src, pts, width, height, pts_arr);
+
+            let contours = new cv.MatVector();
+            let hierarchy = new cv.Mat();
+            cv.findContours(warp, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+
+            if(contours.get(0)) {
+              let rectCnt = cv.boundingRect(contours.get(0));
+              // let roi = warp[rectCnt.y:rectCnt.y+rectCnt.width, rectCnt.x:rectCnt.x+rectCnt.width];
+              try {
+                let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
+                let roi = warp.roi(r);
+                let final_img = cv.resize(roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0);
+                cv.imshow('canvasOutput', final_img);
+              } catch(err) {
+
+              }
+            }
+
             cv.imshow('canvasOutput', warp);
           }
 
@@ -162,28 +178,28 @@
           // has to be used to identify which point is top left, top right
           // bottom left, and bottom right.
 
-          // if (w > 0.8*h && w < 1.2*h) { //If card is diamond oriented
-          //   // If furthest left point is higher than furthest right point,
-          //   // card is tilted to the left.
-          //   if (pts[1][0][1] <= pts[3][0][1]) {
-          //     // If card is titled to the left, approxPolyDP returns points
-          //     // in this order: top right, top left, bottom left, bottom right
-          //     temp_rect[0] = pts[1][0]; // Top left
-          //     temp_rect[1] = pts[0][0]; // Top right
-          //     temp_rect[2] = pts[3][0]; // Bottom right
-          //     temp_rect[3] = pts[2][0]; // Bottom left
-          //   }
-          //   // If furthest left point is lower than furthest right point,
-          //   // card is tilted to the right
-          //   if (pts[1][0][1] > pts[3][0][1]) {
-          //     // If card is titled to the right, approxPolyDP returns points
-          //     // in this order: top left, bottom left, bottom right, top right
-          //     temp_rect[0] = pts[0][0]; // Top left
-          //     temp_rect[1] = pts[3][0]; // Top right
-          //     temp_rect[2] = pts[2][0]; // Bottom right
-          //     temp_rect[3] = pts[1][0]; // Bottom left
-          //   }
-          // }
+          if (w > 0.8*h && w < 1.2*h) { //If card is diamond oriented
+            // If furthest left point is higher than furthest right point,
+            // card is tilted to the left.
+            if (pts_arr[1][0][1] <= pts_arr[3][0][1]) {
+              // If card is titled to the left, approxPolyDP returns points
+              // in this order: top right, top left, bottom left, bottom right
+              temp_rect[0] = pts_arr[1][0]; // Top left
+              temp_rect[1] = pts_arr[0][0]; // Top right
+              temp_rect[2] = pts_arr[3][0]; // Bottom right
+              temp_rect[3] = pts_arr[2][0]; // Bottom left
+            }
+            // If furthest left point is lower than furthest right point,
+            // card is tilted to the right
+            if (pts_arr[1][0][1] > pts_arr[3][0][1]) {
+              // If card is titled to the right, approxPolyDP returns points
+              // in this order: top left, bottom left, bottom right, top right
+              temp_rect[0] = pts_arr[0][0]; // Top left
+              temp_rect[1] = pts_arr[3][0]; // Top right
+              temp_rect[2] = pts_arr[2][0]; // Bottom right
+              temp_rect[3] = pts_arr[1][0]; // Bottom left
+            }
+          }
 
           let maxWidth = 600;
           let maxHeight = 900;
