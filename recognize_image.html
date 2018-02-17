@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Recognize Image</title>
+    <script src="card.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <video id="videoInput" width="800" height="600"></video>
+    <canvas id="canvasOutput"></canvas>
+    <script type="text/javascript">
+      function onOpenCvReady() {
+        // Camera settings
+        const FRAME_RATE = 10;
+
+        const FPS = 30;
+
+        // Initialize calculated frame rate because it's calculated AFTER the first time it's displayed
+        let frame_rate_calc = 1;
+        // let freq = cv.getTickFrequency();
+
+        // Define font to use
+        let font = cv.FONT_HERSHEY_SIMPLEX;
+
+        let video = document.getElementById("videoInput"); 
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(function(err) {
+                console.log("An error occured! " + err);
+            });
+
+        let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+        let dst = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+        let cap = new cv.VideoCapture(video);
+        
+        function processVideo() {
+          let begin = Date.now();
+          cap.read(src);
+
+          let thresh = preprocessImage(src);
+          let cnt = findCards(thresh);
+
+          cv.imshow('canvasOutput', thresh);
+          // schedule next one.
+          let delay = 1000/FPS - (Date.now() - begin);
+          setTimeout(processVideo, delay);
+        }
+        setTimeout(processVideo, 0);
+        
+      }
+    </script>
+    <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+    <script src="card.js" type="text/javascript"></script>
+    <script src="bower_components/numjs/dist/numjs.min.js"></script>
+  </body>
+</html>
