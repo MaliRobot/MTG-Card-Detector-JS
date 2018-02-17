@@ -40,8 +40,30 @@
           let begin = Date.now();
           cap.read(src);
 
+          // Pre-process camera image (gray, blur, and threshold it)
           let thresh = preprocessImage(src);
-          let cnt = findCards(thresh);
+          // Find and sort the contours of all cards in the image (query cards)
+          let [cnt, isCard] = findCards(thresh);
+
+          // If there are no contours, do nothing
+          if (cnt.length > 0) {
+            // Initialize a new "cards" list to assign the card objects.
+            // k indexes the newly made array of cards.
+            let k = 0;
+            let cards = [];
+
+            // For each contour detected:
+            for (c in cnt) {
+              if (isCard[c] === 1) {
+                // Create a card object from the contour and append it to the list of cards.
+                // preprocess_card function takes the card contour and contour and
+                // determines the cards properties (corner points, etc). It generates a
+                // flattened 200x300 image of the card, and isolates the card's
+                // suit and rank from the image.
+                cards.push(preprocessCard(cnt[c], src));
+              }
+            } 
+          }
 
           cv.imshow('canvasOutput', thresh);
           // schedule next one.

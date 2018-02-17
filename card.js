@@ -9,6 +9,34 @@ const RANK_DIFF_MAX = 200000;
 const CARD_MAX_AREA = 300000;
 const CARD_MIN_AREA = 60000;
 
+class Query_card {
+	// Structure to store information about query cards in the camera image.
+	constructor(contour, width = 0, height = 0, cornerPts = [],  center = [], warp = [], rankImg = [],
+				bestMatch = 'unknown', rankDiff = 0) {
+		this.contour = contor; // Contour of card
+		this.width = width; // Width of card
+		this.height = height; // Height of card
+		this.cornerPts = cornerPts; // Corner points of card
+		this.center = center; // Center point of card
+		this.warp = warp; // 200 * 300 flattened, grayed, blurred image
+		this.rankImg = rankImg; // Thresholded, sized image of card's rank
+		this.bestMatch = bestMatch; // Best matched rank
+		this.rankDiff = rankDiff; // Difference between rank image and best matched train rank image
+	}
+}
+
+class TrainRanks {
+	// Structure to store information about train rank images.
+	constructor(img = []) {
+		this.img = img; // Thresholded, sized rank image loaded from hard drive
+		this.name = "Placeholder";
+	}
+}
+
+function loadRanks() {
+	// TODO
+}
+
 function preprocessImage(image, white = false) {
     let dst = new cv.Mat(IM_HEIGHT, IM_WIDTH, cv.CV_8UC4);
     let gray = new cv.Mat(IM_HEIGHT, IM_WIDTH, cv.CV_8UC4);
@@ -39,6 +67,25 @@ function preprocessImage(image, white = false) {
 	return thresh;
 }
 
+function preprocessCard(contour, image) {
+    // Uses contour to find information about the query card. Isolates images
+    // from the card.
+
+    // Initialize new Query_card object
+}
+
+function getTreshold(Qcorner) {
+	// TODO
+}
+
+function matchCard(qCard, trainRanks) {
+	// TODO
+}
+
+function drawResults(image, qCard) {
+	// TODO
+}
+
 function findCards(image) {
 	// Finds all card-sized contours in a thresholded camera image.
 	// Returns the number of cards, and a list of card contours sorted
@@ -61,6 +108,13 @@ function findCards(image) {
 		let hierSorted = [];
 		let contIsCard = [];
 
+		// divide by 4 to create multiple arrays, each for one contour
+		let tempHier = [];
+		for(let j=0; j < hierarchy.data32S.length; j += 4) {
+			tempHier.push(hierarchy.data32S.slice(j, j+4));
+		}
+
+
 		// Fill empty lists with sorted contour and sorted hierarchy. Now,
 	    // the indices of the contour list still correspond with those of
 	    // the hierarchy list. The hierarchy array can be used to check if
@@ -68,18 +122,34 @@ function findCards(image) {
 	    if (contSizes != []) {
 		    for (c in contSizes) {
 	    		constSorted.push(contours.get(contSizes[c][1]));
-	    		// divide hier by contSizes length and chose i-th slice
-	    		// hierSorted.push(i * (hierarchy.data.length / contSizes.length))
+	    		hierSorted.push(tempHier[c]);
 	    	}
-			console.log(hierarchy, contSizes.length);
 	    }
 
+        // Determine which of the contours are cards by applying the
+    	// following criteria: 1) Smaller area than the maximum card size,
+    	// 2), bigger area than the minimum card size, 3) have no parents,
+    	// and 4) have four corners
+    	for(let k=0; k < constSorted.length; k++) {
+    		let contour = constSorted[k];
+    		let size = cv.contourArea(contour);
+            let peri = cv.arcLength(contour,true);
+            let approx = new cv.Mat();
+            cv.approxPolyDP(contour, approx, 0.01*peri, true);
+
+            if((size < CARD_MAX_AREA) && (size > CARD_MIN_AREA) &&
+               (hierSorted[k][3] === -1) && (approx.length)) {
+            	contIsCard.push(1);
+            } else {
+            	contIsCard.push(0);
+            }
+    	}
+    	console.log(constSorted, contIsCard);
+    	return [constSorted, contIsCard];
 
 	} else {
-		return [];
+		return [[], []];
 	}
-
-
 
 }
 
