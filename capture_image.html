@@ -1,193 +1,108 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Capture Image</title>
-    <script src="card.js" type="text/javascript"></script>
-  </head>
-  <body>
-    <video id="videoInput" width="800" height="600"></video>
-    <canvas id="canvasOutput"></canvas>
-    <script type="text/javascript">
-      function onOpenCvReady() {
-        const RANK_WIDTH = 400;
-        const RANK_HEIGHT = 580;
+    <head>
+        <meta charset="utf-8">
+        <title>Capture Image</title>
+        <script src="card.js" type="text/javascript"></script>
+    </head>
+    <body>
+        <video id="videoInput" width="800" height="600"></video>
+        <canvas id="canvasOutput"></canvas>
+        <script type="text/javascript">
+            function onOpenCvReady() {
+                const RANK_WIDTH = 400;
+                const RANK_HEIGHT = 580;
 
-        const SUIT_WIDTH = 70;
-        const SUIT_HEIGHT = 100;
+                const SUIT_WIDTH = 70;
+                const SUIT_HEIGHT = 100;
 
-        // Adaptive threshold levels
-        const BKG_THRESH = 60;
-        const CARD_THRESH = 30;
+                // Adaptive threshold levels
+                const BKG_THRESH = 60;
+                const CARD_THRESH = 30;
 
-        const FPS = 30;
+                const FPS = 30;
 
-        let video = document.getElementById("videoInput"); 
-        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-            .then(function(stream) {
-                video.srcObject = stream;
-                video.play();
-            })
-            .catch(function(err) {
-                console.log("An error occured! " + err);
-            });
+                let video = document.getElementById("videoInput"); 
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        video.play();
+                    })
+                    .catch(function(err) {
+                        console.log("An error occured! " + err);
+                    });
 
-        let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-        let cap = new cv.VideoCapture(video);
+                let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+                let cap = new cv.VideoCapture(video);
 
-        function processVideo() {
-          let begin = Date.now();
-          cap.read(src);
+            function processVideo() {
+                let begin = Date.now();
+                cap.read(src);
 
-          let thresh = preprocessImage(src);
+                let thresh = preprocessImage(src);
 
-          let contours = new cv.MatVector();
-          let hierarchy = new cv.Mat();
-          cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+                let contours = new cv.MatVector();
+                let hierarchy = new cv.Mat();
+                cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
 
-          var largestContour = null;
-          var largestArea = 0;
-          for (let i = 0; i < contours.size(); ++i) {
-            let c = contours.get(i);
-            let area = cv.contourArea(c, false);
-            if (area > largestArea) {
-              largestArea = area;
-              largestContour = c;
-            }
-          }
+                var largestContour = null;
+                var largestArea = 0;
+                for (let i = 0; i < contours.size(); ++i) {
+                    let c = contours.get(i);
+                    let area = cv.contourArea(c, false);
+                    if (area > largestArea) {
+                        largestArea = area;
+                        largestContour = c;
+                    }
+                }
 
-          if (largestContour != null) {
-            let peri = cv.arcLength(largestContour,true);
-            let approx = new cv.Mat();
-            cv.approxPolyDP(largestContour, approx, 0.01*peri, true);
+                if (largestContour != null) {
+                  let peri = cv.arcLength(largestContour,true);
+                  let approx = new cv.Mat();
+                  cv.approxPolyDP(largestContour, approx, 0.01*peri, true);
 
-            let points = approx.data32S;
-            let pts_arr = [];
-            for(let i = 0; i < points.length; i += 2) {
-              pts_arr.push([[points[i], points[i+1]]]);
-            }
+                  let points = approx.data32S;
+                  let pts_arr = [];
+                  for(let i = 0; i < points.length; i += 2) {
+                      pts_arr.push([[points[i], points[i+1]]]);
+                  }
 
-            let pts = nj.array(approx.data32S, 'float32');
-            let rect = cv.boundingRect(largestContour);
+                  let pts = nj.array(approx.data32S, 'float32');
+                  let rect = cv.boundingRect(largestContour);
 
-            let width = rect.width;
-            let height = rect.height;
-            let warp = flattener(src, pts, width, height, pts_arr);
+                  let width = rect.width;
+                  let height = rect.height;
+                  let warp = flattener(src, pts, width, height, pts_arr);
 
-            let contours = new cv.MatVector();
-            let hierarchy = new cv.Mat();
-            cv.findContours(warp, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+                  let contours = new cv.MatVector();
+                  let hierarchy = new cv.Mat();
+                  cv.findContours(warp, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
 
-            if(contours.get(0)) {
-              let rectCnt = cv.boundingRect(contours.get(0));
-              // let roi = warp[rectCnt.y:rectCnt.y+rectCnt.width, rectCnt.x:rectCnt.x+rectCnt.width];
-              try {
-                let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
-                let roi = warp.roi(r);
-                let final_img = cv.resize(roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0);
-                cv.imshow('canvasOutput', final_img);
-              } catch(err) {
+                  if(contours.get(0)) {
+                      let rectCnt = cv.boundingRect(contours.get(0));
+                      // let roi = warp[rectCnt.y:rectCnt.y+rectCnt.width, rectCnt.x:rectCnt.x+rectCnt.width];
+                      try {
+                        let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
+                        let roi = warp.roi(r);
+                        let final_img = cv.resize(roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0);
+                        cv.imshow('canvasOutput', final_img);
+                      } catch(err) {
 
+                      }
+                  }
+
+                  cv.imshow('canvasOutput', warp);
               }
+              // cv.imshow('canvasOutput', thresh);
+
+              // schedule next one.
+              let delay = 1000/FPS - (Date.now() - begin);
+              setTimeout(processVideo, delay);
+              }
+              setTimeout(processVideo, 0);
             }
-
-            cv.imshow('canvasOutput', warp);
-          }
-
-          // cv.imshow('canvasOutput', thresh);
-
-          // schedule next one.
-          let delay = 1000/FPS - (Date.now() - begin);
-          setTimeout(processVideo, delay);
-          }
-        setTimeout(processVideo, 0);
-
-        function flattener(image, pts, w, h, pts_arr) {
-          // Flattens an image of a card into a top-down 200x300 perspective.
-          // Returns the flattened, re-sized, grayed image.
-          // See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
-          let temp_rect = nj.zeros((4,2), 'float32');
-          let s = pts.selection.data;
-
-          let s_sorted = s.sort();
-          let tl = s_sorted[0];
-          let br = s_sorted[s.length - 1];
-
-          let diff_array = [];
-          for(let i = 0; i < s.length - 1; i++) {
-            let diff = Math.abs(s[i] - s[i+1]);
-            diff_array.push(diff);
-          }
-          let s_diff_array = diff_array.sort();
-
-          let tr = s_diff_array[0];
-          let bl = s_diff_array[s.length - 1];
-
-          // Need to create an array listing points in order of
-          // [top left, top right, bottom right, bottom left]
-          // before doing the perspective transform
-
-          if(w > 0.8 * h) { // If card is vertically oriented
-            temp_rect[0] = tl;
-            temp_rect[1] = tr;
-            temp_rect[2] = br;
-            temp_rect[3] = bl;
-          }
-
-
-          if(w >= 1.2 * h) { // If card is horizontally oriented
-            temp_rect[0] = bl;
-            temp_rect[1] = tl;
-            temp_rect[2] = tr;
-            temp_rect[3] = br;
-          }
-
-          // If the card is 'diamond' oriented, a different algorithm
-          // has to be used to identify which point is top left, top right
-          // bottom left, and bottom right.
-
-          if (w > 0.8*h && w < 1.2*h) { //If card is diamond oriented
-            // If furthest left point is higher than furthest right point,
-            // card is tilted to the left.
-            if (pts_arr[1][0][1] <= pts_arr[3][0][1]) {
-              // If card is titled to the left, approxPolyDP returns points
-              // in this order: top right, top left, bottom left, bottom right
-              temp_rect[0] = pts_arr[1][0]; // Top left
-              temp_rect[1] = pts_arr[0][0]; // Top right
-              temp_rect[2] = pts_arr[3][0]; // Bottom right
-              temp_rect[3] = pts_arr[2][0]; // Bottom left
-            }
-            // If furthest left point is lower than furthest right point,
-            // card is tilted to the right
-            if (pts_arr[1][0][1] > pts_arr[3][0][1]) {
-              // If card is titled to the right, approxPolyDP returns points
-              // in this order: top left, bottom left, bottom right, top right
-              temp_rect[0] = pts_arr[0][0]; // Top left
-              temp_rect[1] = pts_arr[3][0]; // Top right
-              temp_rect[2] = pts_arr[2][0]; // Bottom right
-              temp_rect[3] = pts_arr[1][0]; // Bottom left
-            }
-          }
-
-          let maxWidth = 600;
-          let maxHeight = 900;
-          let dsize = new cv.Size(maxHeight, maxWidth);
-
-          // Create destination array, calculate perspective transform matrix,
-          // and warp card image
-          let warp = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-          let dst = nj.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], 'float32');
-          let dstArr = cv.matFromArray(4, 2, cv.CV_32F, dst);
-          let rect = cv.matFromArray(4, 2, cv.CV_32F, temp_rect);
-
-          let M = cv.getPerspectiveTransform(rect, dstArr);
-          cv.warpPerspective(image, warp, M, dsize);
-          cv.cvtColor(warp, warp, cv.COLOR_BGR2GRAY);
-          return warp;
-        }
-      }
-    </script>
-    <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
-    <script src="bower_components/numjs/dist/numjs.min.js"></script>
-  </body>
+        </script>
+        <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+        <script src="bower_components/numjs/dist/numjs.min.js"></script>
+    </body>
 </html>

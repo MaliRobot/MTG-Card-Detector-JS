@@ -1,81 +1,99 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Recognize Image</title>
-    <script src="card.js" type="text/javascript"></script>
-  </head>
-  <body>
-    <video id="videoInput" width="800" height="600"></video>
-    <canvas id="canvasOutput"></canvas>
-    <script type="text/javascript">
-      function onOpenCvReady() {
-        // Camera settings
-        const FRAME_RATE = 10;
+    <head>
+        <meta charset="utf-8">
+        <title>Recognize Image</title>
+        <script src="card.js" type="text/javascript"></script>
+    </head>
+    <body>
+        <video id="videoInput" width="800" height="600"></video>
+        <canvas id="canvasOutput"></canvas>
+        <script type="text/javascript">
+        function onOpenCvReady() {
+            // Camera settings
+            const FRAME_RATE = 10;
 
-        const FPS = 30;
+            const FPS = 30;
 
-        // Initialize calculated frame rate because it's calculated AFTER the first time it's displayed
-        let frame_rate_calc = 1;
-        // let freq = cv.getTickFrequency();
+            // Initialize calculated frame rate because it's calculated AFTER the first time it's displayed
+            let frame_rate_calc = 1;
+            // let freq = cv.getTickFrequency();
 
-        // Define font to use
-        let font = cv.FONT_HERSHEY_SIMPLEX;
+            // Define font to use
+            let font = cv.FONT_HERSHEY_SIMPLEX;
 
-        let video = document.getElementById("videoInput"); 
-        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-            .then(function(stream) {
-                video.srcObject = stream;
-                video.play();
-            })
-            .catch(function(err) {
-                console.log("An error occured! " + err);
-            });
+            let trainRanks = loadRanks();
 
-        let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-        let dst = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-        let cap = new cv.VideoCapture(video);
-        
-        function processVideo() {
-          let begin = Date.now();
-          cap.read(src);
+            let video = document.getElementById("videoInput"); 
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(function(err) {
+                    console.log("An error occured! " + err);
+                });
 
-          // Pre-process camera image (gray, blur, and threshold it)
-          let thresh = preprocessImage(src);
-          // Find and sort the contours of all cards in the image (query cards)
-          let [cnt, isCard] = findCards(thresh);
+            let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+            let dst = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+            let cap = new cv.VideoCapture(video);
+            
+            function processVideo() {
+                let begin = Date.now();
+                cap.read(src);
 
-          // If there are no contours, do nothing
-          if (cnt.length > 0) {
-            // Initialize a new "cards" list to assign the card objects.
-            // k indexes the newly made array of cards.
-            let k = 0;
-            let cards = [];
+                // Pre-process camera image (gray, blur, and threshold it)
+                let thresh = preprocessImage(src);
 
-            // For each contour detected:
-            for (c in cnt) {
-              if (isCard[c] === 1) {
-                // Create a card object from the contour and append it to the list of cards.
-                // preprocess_card function takes the card contour and contour and
-                // determines the cards properties (corner points, etc). It generates a
-                // flattened 200x300 image of the card, and isolates the card's
-                // suit and rank from the image.
-                cards.push(preprocessCard(cnt[c], src));
-              }
-            } 
-          }
+                // Find and sort the contours of all cards in the image (query cards)
+                let [cnt, isCard] = findCards(thresh);
 
-          cv.imshow('canvasOutput', thresh);
-          // schedule next one.
-          let delay = 1000/FPS - (Date.now() - begin);
-          setTimeout(processVideo, delay);
+                // If there are no contours, do nothing
+                if (cnt.length > 0) {
+                    // Initialize a new "cards" list to assign the card objects.
+                    // k indexes the newly made array of cards.
+                    let k = 0;
+                    let cards = [];
+
+                    // For each contour detected:
+                    for (c in cnt) {
+                        if (isCard[c] === 1) {
+                            // Create a card object from the contour and append it to the list of cards.
+                            // preprocess_card function takes the card contour and contour and
+                            // determines the cards properties (corner points, etc). It generates a
+                            // flattened 200x300 image of the card, and isolates the card's
+                            // suit and rank from the image.
+                            cards.push(preprocessCard(cnt[c], src));
+
+                            // Find the best rank and suit match for the card.
+                            let [cards[k].best_rank_match, cards[k].rank_diff] = match_card(cards[k], trainRanks);
+
+                            // Draw center point and match result on the image.
+                            let image = drawResults(src, cards[k]);
+                            k++;
+                        }
+                    } 
+                    // Draw card contours on image (have to do contours all at once or
+                    // they do not show up properly for some reason)
+                    if (cards.length != 0) {
+                        let tempCnts = [];
+                        for (n in cards) {
+                            tempCnts.push(cards[n].contour);
+                        }
+                        cv.drawResults(src, tempCnts, -1, [255, 0, 0], 2);
+                    }
+                }
+
+                cv.imshow('canvasOutput', thresh);
+                // schedule next one.
+                let delay = 1000/FPS - (Date.now() - begin);
+                setTimeout(processVideo, delay);
+            }
+            setTimeout(processVideo, 0);
+            
         }
-        setTimeout(processVideo, 0);
-        
-      }
-    </script>
-    <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
-    <script src="card.js" type="text/javascript"></script>
-    <script src="bower_components/numjs/dist/numjs.min.js"></script>
-  </body>
+        </script>
+        <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+        <script src="bower_components/numjs/dist/numjs.min.js"></script>
+    </body>
 </html>
