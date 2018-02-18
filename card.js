@@ -55,10 +55,15 @@ function loadRanks(filepath = 'train_ranks/') {
               'descendant_of_soramaro', 'wandering_ones', 'orochi_sustainer', 'field_of_reality'];
 
     for (card in cardNames) {
-    	trainRanks.push(TrainRanks());
+    	trainRanks.push(new TrainRanks());
     	trainRanks[i].name = cardNames[card];
     	let filename = cardNames[card] + '.jpg';
-    	trainRanks[card].img = cv.imread(filepath + filename, cv.IMREAD_GRAYSCALE);
+    	let fullpath = filepath + filename;
+    	let collection = document.getElementById('collection');
+    	collection.innerHTML += '<img id="' + filename + '" src="' + fullpath + '"/>';
+    	collection.onload = function() {
+			trainRanks[card].img = cv.imread(filename, cv.IMREAD_GRAYSCALE);
+    	}
     	i++;
     }
 }
@@ -177,7 +182,7 @@ function matchCard(qCard, trainRanks) {
 
         	let diffImg = cv.absdiff(qCard.rankImg, trank.img);
 
-        	let rankDiff = Math.round((diffImg.data32S.reduce((a, b) => a + b, 0) / 255);
+        	let rankDiff = Math.round((diffImg.data32S.reduce((a, b) => a + b, 0)) / 255);
 
     		if (rankDiff < bestRankMatchDiff) {
     			bestRankMatchDiff = rankDiff;
