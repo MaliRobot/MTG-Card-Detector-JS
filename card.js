@@ -302,12 +302,17 @@ function flattener(image, pts, w, h, pts_arr) {
 	// Flattens an image of a card into a top-down 200x300 perspective.
 	// Returns the flattened, re-sized, grayed image.
 	// See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
-	let temp_rect = nj.zeros((4,2), 'float32');
-	let s = pts.selection.data;
+	let temp_rect = nj.zeros([4,2], 'float32');
 
+	console.log(pts);
+    // *******************************     
+
+	let s = pts.selection.data;
 	let s_sorted = s.sort();
 	let tl = s_sorted[0];
 	let br = s_sorted[s.length - 1];
+
+	// console.log(tl, br);
 
 	let diff_array = [];
 	for(let i = 0; i < s.length - 1; i++) {
@@ -371,7 +376,7 @@ function flattener(image, pts, w, h, pts_arr) {
 
 	// Create destination array, calculate perspective transform matrix,
 	// and warp card image
-	let warp = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+	let warp = new cv.Mat(IM_HEIGHT, IM_WIDTH, cv.CV_8UC4);
 	let dst = nj.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], 'float32');
 	let dstArr = cv.matFromArray(4, 2, cv.CV_32F, dst);
 	let rect = cv.matFromArray(4, 2, cv.CV_32F, temp_rect);

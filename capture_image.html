@@ -43,7 +43,7 @@
 
                 let contours = new cv.MatVector();
                 let hierarchy = new cv.Mat();
-                cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+                cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE);
 
                 var largestContour = null;
                 var largestArea = 0;
@@ -61,6 +61,8 @@
                   let approx = new cv.Mat();
                   cv.approxPolyDP(largestContour, approx, 0.01*peri, true);
 
+                  console.log(approx);
+
                   let points = approx.data32S;
                   let pts_arr = [];
                   for(let i = 0; i < points.length; i += 2) {
@@ -68,10 +70,12 @@
                   }
 
                   let pts = nj.array(approx.data32S, 'float32');
-                  let rect = cv.boundingRect(largestContour);
+                  let rect = cv.boundingRect(largestContour);             
 
                   let width = rect.width;
                   let height = rect.height;
+                  
+                  // *******************************     
                   let warp = flattener(src, pts, width, height, pts_arr);
 
                   let contours = new cv.MatVector();
