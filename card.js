@@ -302,7 +302,8 @@ function flattener(image, pts, w, h) {
 	// Flattens an image of a card into a top-down 200x300 perspective.
 	// Returns the flattened, re-sized, grayed image.
 	// See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
-	let temp_rect = nj.zeros([4,2], 'float32');
+	// let temp_rect = nj.zeros([4,2], 'float32');
+	let temp_rect = [0, 0, 0, 0];
 
 	let pts_sum = [];
 	let pts_diff_array = [];
@@ -318,13 +319,11 @@ function flattener(image, pts, w, h) {
 	let tl = pts[pts_sum_sorted[0][1]];
 	let br = pts[pts_sum_sorted[pts_sum_sorted.length - 1][1]];
 	let tr = pts[pts_diff_sorted[0][1]];
-	let bl = pts[pts_diff_sorted[pts_diff_sorted.length - 1][1]];
-    //*******************************   
+	let bl = pts[pts_diff_sorted[pts_diff_sorted.length - 1][1]]; 
 
 	// Need to create an array listing points in order of
 	// [top left, top right, bottom right, bottom left]
 	// before doing the perspective transform
-
 	if(w > 0.8 * h) { // If card is vertically oriented
 	    temp_rect[0] = tl;
 	    temp_rect[1] = tr;
@@ -343,7 +342,6 @@ function flattener(image, pts, w, h) {
 	// If the card is 'diamond' oriented, a different algorithm
     // has to be used to identify which point is top left, top right
 	// bottom left, and bottom right.
-
 	if (w > 0.8*h && w < 1.2*h) { //If card is diamond oriented
 	    // If furthest left point is higher than furthest right point,
 	    // card is tilted to the left.
@@ -367,8 +365,6 @@ function flattener(image, pts, w, h) {
 	    }
 	}
 
-	console.log(temp_rect);
-
 	let maxWidth = 600;
 	let maxHeight = 900;
 	let dsize = new cv.Size(maxHeight, maxWidth);
@@ -377,10 +373,13 @@ function flattener(image, pts, w, h) {
 	// and warp card image
 	let warp = new cv.Mat(IM_HEIGHT, IM_WIDTH, cv.CV_8UC4);
 	let dst = nj.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], 'float32');
-	let dstArr = cv.matFromArray(4, 2, cv.CV_32F, dst);
-	let rect = cv.matFromArray(4, 2, cv.CV_32F, temp_rect);
+	let dstArr = cv.matFromArray(4, 2, cv.CV_32F, dst.selection.data);
 
+    //*******************************
+	let rect = cv.matFromArray(4, 2, cv.CV_32F, [temp_rect[0][0], temp_rect[0][1], temp_rect[1][0], temp_rect[1][1], temp_rect[2][0], temp_rect[2][1], temp_rect[3][0], temp_rect[3][1]]);
 	let M = cv.getPerspectiveTransform(rect, dstArr);
+	console.log(M);
+
 	cv.warpPerspective(image, warp, M, dsize);
 	cv.cvtColor(warp, warp, cv.COLOR_BGR2GRAY);
 	return warp;
