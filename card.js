@@ -298,31 +298,28 @@ function sortFunction(a, b) {
     }
 }
 
-function flattener(image, pts, w, h, pts_arr) {
+function flattener(image, pts, w, h) {
 	// Flattens an image of a card into a top-down 200x300 perspective.
 	// Returns the flattened, re-sized, grayed image.
 	// See www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
 	let temp_rect = nj.zeros([4,2], 'float32');
 
-	console.log(pts);
-    // *******************************     
-
-	let s = pts.selection.data;
-	let s_sorted = s.sort();
-	let tl = s_sorted[0];
-	let br = s_sorted[s.length - 1];
-
-	// console.log(tl, br);
-
-	let diff_array = [];
-	for(let i = 0; i < s.length - 1; i++) {
-	    let diff = Math.abs(s[i] - s[i+1]);
-	    diff_array.push(diff);
+	let pts_sum = [];
+	let pts_diff_array = [];
+	for(let i = 0; i < pts.length; i++) {
+	    let sum =  pts[i][0][0] + pts[i][0][1];
+	    pts_sum.push([sum, i]);
+    	let diff = pts[i][0][0] - pts[i][0][1];
+	    pts_diff_array.push([diff, i]);
 	}
-	let s_diff_array = diff_array.sort();
+	let pts_sum_sorted = pts_sum.sort(sortFunction);
+	let pts_diff_sorted = pts_diff_array.sort(sortFunction);
 
-	let tr = s_diff_array[0];
-	let bl = s_diff_array[s.length - 1];
+	let tl = pts[pts_sum_sorted[0][1]];
+	let br = pts[pts_sum_sorted[pts_sum_sorted.length - 1][1]];
+	let tr = pts[pts_diff_sorted[0][1]];
+	let bl = pts[pts_diff_sorted[pts_diff_sorted.length - 1][1]];
+    //*******************************   
 
 	// Need to create an array listing points in order of
 	// [top left, top right, bottom right, bottom left]
@@ -350,25 +347,27 @@ function flattener(image, pts, w, h, pts_arr) {
 	if (w > 0.8*h && w < 1.2*h) { //If card is diamond oriented
 	    // If furthest left point is higher than furthest right point,
 	    // card is tilted to the left.
-	    if (pts_arr[1][0][1] <= pts_arr[3][0][1]) {
+	    if (pts[1][0][1] <= pts[3][0][1]) {
 	        // If card is titled to the left, approxPolyDP returns points
 	        // in this order: top right, top left, bottom left, bottom right
-	        temp_rect[0] = pts_arr[1][0]; // Top left
-	        temp_rect[1] = pts_arr[0][0]; // Top right
-	        temp_rect[2] = pts_arr[3][0]; // Bottom right
-	        temp_rect[3] = pts_arr[2][0]; // Bottom left
+	        temp_rect[0] = pts[1][0]; // Top left
+	        temp_rect[1] = pts[0][0]; // Top right
+	        temp_rect[2] = pts[3][0]; // Bottom right
+	        temp_rect[3] = pts[2][0]; // Bottom left
 	    }
 	    // If furthest left point is lower than furthest right point,
 	    // card is tilted to the right
-	    if (pts_arr[1][0][1] > pts_arr[3][0][1]) {
+	    if (pts[1][0][1] > pts[3][0][1]) {
 	        // If card is titled to the right, approxPolyDP returns points
 	        // in this order: top left, bottom left, bottom right, top right
-	        temp_rect[0] = pts_arr[0][0]; // Top left
-	        temp_rect[1] = pts_arr[3][0]; // Top right
-	        temp_rect[2] = pts_arr[2][0]; // Bottom right
-	        temp_rect[3] = pts_arr[1][0]; // Bottom left
+	        temp_rect[0] = pts[0][0]; // Top left
+	        temp_rect[1] = pts[3][0]; // Top right
+	        temp_rect[2] = pts[2][0]; // Bottom right
+	        temp_rect[3] = pts[1][0]; // Bottom left
 	    }
 	}
+
+	console.log(temp_rect);
 
 	let maxWidth = 600;
 	let maxHeight = 900;

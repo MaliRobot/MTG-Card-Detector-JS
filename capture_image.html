@@ -57,45 +57,43 @@
                 }
 
                 if (largestContour != null) {
-                  let peri = cv.arcLength(largestContour,true);
-                  let approx = new cv.Mat();
-                  cv.approxPolyDP(largestContour, approx, 0.01*peri, true);
+                    let peri = cv.arcLength(largestContour,true);
+                    let approx = new cv.Mat();
+                    cv.approxPolyDP(largestContour, approx, 0.01*peri, true);
 
-                  console.log(approx);
+                    // TODO - how is mat in opencv.js structured compared to python
+                    // DOUBLECHECK
+                    let points = approx.data32S;
+                    let pts = [];
+                    for(let i = 0; i < points.length; i += 2) {
+                        pts.push([[points[i], points[i+1]]]);
+                    }
 
-                  let points = approx.data32S;
-                  let pts_arr = [];
-                  for(let i = 0; i < points.length; i += 2) {
-                      pts_arr.push([[points[i], points[i+1]]]);
-                  }
+                    let rect = cv.boundingRect(largestContour);             
 
-                  let pts = nj.array(approx.data32S, 'float32');
-                  let rect = cv.boundingRect(largestContour);             
+                    let width = rect.width;
+                    let height = rect.height;
+  
+                    let warp = flattener(src, pts, width, height);
+                    // *******************************   
+                    let contours = new cv.MatVector();
+                    let hierarchy = new cv.Mat();
+                    cv.findContours(warp, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
 
-                  let width = rect.width;
-                  let height = rect.height;
-                  
-                  // *******************************     
-                  let warp = flattener(src, pts, width, height, pts_arr);
+                    if(contours.get(0)) {
+                        let rectCnt = cv.boundingRect(contours.get(0));
+                        // let roi = warp[rectCnt.y:rectCnt.y+rectCnt.width, rectCnt.x:rectCnt.x+rectCnt.width];
+                        try {
+                          let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
+                          let roi = warp.roi(r);
+                          let final_img = cv.resize(roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0);
+                          cv.imshow('canvasOutput', final_img);
+                        } catch(err) {
 
-                  let contours = new cv.MatVector();
-                  let hierarchy = new cv.Mat();
-                  cv.findContours(warp, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+                        }
+                    }
 
-                  if(contours.get(0)) {
-                      let rectCnt = cv.boundingRect(contours.get(0));
-                      // let roi = warp[rectCnt.y:rectCnt.y+rectCnt.width, rectCnt.x:rectCnt.x+rectCnt.width];
-                      try {
-                        let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
-                        let roi = warp.roi(r);
-                        let final_img = cv.resize(roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0);
-                        cv.imshow('canvasOutput', final_img);
-                      } catch(err) {
-
-                      }
-                  }
-
-                  cv.imshow('canvasOutput', warp);
+                    cv.imshow('canvasOutput', warp);
               }
               // cv.imshow('canvasOutput', thresh);
 
