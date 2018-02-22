@@ -367,12 +367,12 @@ function flattener(image, pts, w, h) {
 
 	let maxWidth = 600;
 	let maxHeight = 900;
-	let dsize = new cv.Size(maxHeight, maxWidth);
+	let dsize = new cv.Size(maxWidth, maxHeight);
 
 	// Create destination array, calculate perspective transform matrix,
 	// and warp card image
-	let warp = new cv.Mat(IM_HEIGHT, IM_WIDTH, cv.CV_8UC4);
-	let dst = nj.array([[0,0],[maxWidth-1,0],[maxWidth-1,maxHeight-1],[0, maxHeight-1]], 'float32');
+	let warp = new cv.Mat(IM_WIDTH, IM_HEIGHT, cv.CV_8UC4);
+	let dst = nj.array([[0,0],[maxWidth-1,0],[maxWidth-1, maxHeight-1],[0, maxHeight-1]], 'float32');
 	let dstArr = cv.matFromArray(4, 2, cv.CV_32F, dst.selection.data);
 
     //*******************************

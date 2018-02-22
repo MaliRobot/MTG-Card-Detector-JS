@@ -84,16 +84,17 @@
                         let rectCnt = cv.boundingRect(contours.get(0));
                         // let roi = warp[rectCnt.y:rectCnt.y+rectCnt.width, rectCnt.x:rectCnt.x+rectCnt.width];
                         try {
+                          let final_img = new cv.Mat();
                           let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
                           let roi = warp.roi(r);
-                          let final_img = cv.resize(roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0);
+                          cv.resize(roi, final_img, new cv.Size(RANK_WIDTH, RANK_HEIGHT), 0, 0);
                           cv.imshow('canvasOutput', final_img);
                         } catch(err) {
-
+                          console.log(err);
                         }
                     }
 
-                    cv.imshow('canvasOutput', warp);
+                    // cv.imshow('canvasOutput', warp);
               }
               // cv.imshow('canvasOutput', thresh);
 
