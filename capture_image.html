@@ -93,12 +93,12 @@
                         hierarchy.delete();
                         approx.delete();
                         // cv.imshow('canvasOutput', warp);
-                  }
-                  // schedule next one.
-                  let delay = 1000/FPS - (Date.now() - begin);
-                  setTimeout(processVideo, delay);
-              }
-              setTimeout(processVideo, 0);
+                    }
+                    // schedule next one.
+                    let delay = 1000/FPS - (Date.now() - begin);
+                    setTimeout(processVideo, delay);
+                }
+                setTimeout(processVideo, 0);
             }
         </script>
         <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>

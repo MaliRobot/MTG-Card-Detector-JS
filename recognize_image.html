@@ -16,10 +16,6 @@
 
             const FPS = 30;
 
-            // Initialize calculated frame rate because it's calculated AFTER the first time it's displayed
-            let frame_rate_calc = 1;
-            // let freq = cv.getTickFrequency();
-
             // Define font to use
             let font = cv.FONT_HERSHEY_SIMPLEX;
 
@@ -91,7 +87,6 @@ console.log(k);
                 setTimeout(processVideo, delay);
             }
             setTimeout(processVideo, 0);
-            
         }
         </script>
         <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
