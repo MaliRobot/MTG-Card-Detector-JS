@@ -35,72 +35,68 @@
                 let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
                 let cap = new cv.VideoCapture(video);
 
-            function processVideo() {
-                let begin = Date.now();
-                cap.read(src);
+                function processVideo() {
+                    let begin = Date.now();
+                    cap.read(src);
 
-                let thresh = preprocessImage(src);
+                    let thresh = preprocessImage(src);
 
-                let contours = new cv.MatVector();
-                let hierarchy = new cv.Mat();
-                cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE);
-
-                var largestContour = null;
-                var largestArea = 0;
-                for (let i = 0; i < contours.size(); ++i) {
-                    let c = contours.get(i);
-                    let area = cv.contourArea(c, false);
-                    if (area > largestArea) {
-                        largestArea = area;
-                        largestContour = c;
-                    }
-                }
-
-                if (largestContour != null) {
-                    let peri = cv.arcLength(largestContour,true);
-                    let approx = new cv.Mat();
-                    cv.approxPolyDP(largestContour, approx, 0.01*peri, true);
-
-                    // TODO - how is mat in opencv.js structured compared to python
-                    // DOUBLECHECK
-                    let points = approx.data32S;
-                    let pts = [];
-                    for(let i = 0; i < points.length; i += 2) {
-                        pts.push([[points[i], points[i+1]]]);
-                    }
-
-                    let rect = cv.boundingRect(largestContour);             
-
-                    let width = rect.width;
-                    let height = rect.height;
-  
-                    let warp = flattener(src, pts, width, height);
-                    // *******************************   
                     let contours = new cv.MatVector();
                     let hierarchy = new cv.Mat();
-                    cv.findContours(warp, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+                    cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE);
 
-                    if(contours.get(0)) {
-                        let rectCnt = cv.boundingRect(contours.get(0));
-                        // let roi = warp[rectCnt.y:rectCnt.y+rectCnt.width, rectCnt.x:rectCnt.x+rectCnt.width];
-                        try {
-                          let final_img = new cv.Mat();
-                          let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
-                          let roi = warp.roi(r);
-                          cv.resize(roi, final_img, new cv.Size(RANK_WIDTH, RANK_HEIGHT), 0, 0);
-                          cv.imshow('canvasOutput', final_img);
-                        } catch(err) {
-                          console.log(err);
+                    var largestContour = null;
+                    var largestArea = 0;
+                    for (let i = 0; i < contours.size(); ++i) {
+                        let c = contours.get(i);
+                        let area = cv.contourArea(c, false);
+                        if (area > largestArea) {
+                            largestArea = area;
+                            largestContour = c;
                         }
                     }
 
-                    // cv.imshow('canvasOutput', warp);
-              }
-              // cv.imshow('canvasOutput', thresh);
+                    if (largestContour != null) {
+                        let peri = cv.arcLength(largestContour,true);
+                        let approx = new cv.Mat();
+                        cv.approxPolyDP(largestContour, approx, 0.01*peri, true);
 
-              // schedule next one.
-              let delay = 1000/FPS - (Date.now() - begin);
-              setTimeout(processVideo, delay);
+                        let points = approx.data32S;
+                        let pts = [];
+                        for(let i = 0; i < points.length; i += 2) {
+                            pts.push([[points[i], points[i+1]]]);
+                        }
+
+                        let rect = cv.boundingRect(largestContour);             
+                        let width = rect.width;
+                        let height = rect.height;
+                        let warp = flattener(src, pts, width, height);
+
+                        let contours = new cv.MatVector();
+                        let hierarchy = new cv.Mat();
+                        cv.findContours(warp, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+
+                        if(contours.get(0)) {
+                            let rectCnt = cv.boundingRect(contours.get(0));
+                            try {
+                              let final_img = new cv.Mat();
+                              let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
+                              let roi = warp.roi(r);
+                              cv.resize(roi, final_img, new cv.Size(RANK_WIDTH, RANK_HEIGHT), 0, 0);
+                              cv.imshow('canvasOutput', final_img);
+                            } catch(err) {
+                              console.log(err);
+                            }
+                        }
+                        warp.delete();
+                        contours.delete();
+                        hierarchy.delete();
+                        approx.delete();
+                        // cv.imshow('canvasOutput', warp);
+                  }
+                  // schedule next one.
+                  let delay = 1000/FPS - (Date.now() - begin);
+                  setTimeout(processVideo, delay);
               }
               setTimeout(processVideo, 0);
             }

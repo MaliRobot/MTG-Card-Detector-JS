@@ -375,12 +375,11 @@ function flattener(image, pts, w, h) {
 	let dst = nj.array([[0,0],[maxWidth-1,0],[maxWidth-1, maxHeight-1],[0, maxHeight-1]], 'float32');
 	let dstArr = cv.matFromArray(4, 2, cv.CV_32F, dst.selection.data);
 
-    //*******************************
 	let rect = cv.matFromArray(4, 2, cv.CV_32F, [temp_rect[0][0], temp_rect[0][1], temp_rect[1][0], temp_rect[1][1], temp_rect[2][0], temp_rect[2][1], temp_rect[3][0], temp_rect[3][1]]);
 	let M = cv.getPerspectiveTransform(rect, dstArr);
-	console.log(M);
-
 	cv.warpPerspective(image, warp, M, dsize);
 	cv.cvtColor(warp, warp, cv.COLOR_BGR2GRAY);
+
+	dstArr.delete();
 	return warp;
 }
