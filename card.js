@@ -13,7 +13,7 @@ class QueryCard {
 	// Structure to store information about query cards in the camera image.
 	constructor(contour, width = 0, height = 0, cornerPts = [],  center = [], warp = [], rankImg = [],
 				bestMatch = 'unknown', rankDiff = 0) {
-		this.contour = contor; // Contour of card
+		this.contour = contour; // Contour of card
 		this.width = width; // Width of card
 		this.height = height; // Height of card
 		this.cornerPts = cornerPts; // Corner points of card
@@ -233,60 +233,57 @@ function findCards(image) {
 	cv.findContours(image, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE);
 
     // If there are no contours, do nothing
-    // decide if it's white or black border card
-	if(contours) {
-		let contSizes = [];
-		for(let i=0; i < contours.size(); ++i){
-			contSizes.push([cv.contourArea(contours.get(i)), i]);
-		}
-		contSizes = contSizes.sort(sortFunction);
+	if(contours.length === 0) {
+        return [[], []];
+    }
 
-		let constSorted = [];
-		let hierSorted = [];
-		let contIsCard = [];
+	let contSizes = [];
+	for(let i=0; i < contours.size(); ++i){
+		contSizes.push([cv.contourArea(contours.get(i)), i]);
+	}
+	contSizes = contSizes.sort(sortFunction);
+    contSizes.reverse();
 
-		// divide by 4 to create multiple arrays, each for one contour
-		let tempHier = [];
-		for(let j=0; j < hierarchy.data32S.length; j += 4) {
-			tempHier.push(hierarchy.data32S.slice(j, j+4));
-		}
+	let constSorted = [];
+	let hierSorted = [];
+	let contIsCard = [];
 
-
-		// Fill empty lists with sorted contour and sorted hierarchy. Now,
-	    // the indices of the contour list still correspond with those of
-	    // the hierarchy list. The hierarchy array can be used to check if
-	    // the contours have parents or not.
-	    if (contSizes != []) {
-		    for (c in contSizes) {
-	    		constSorted.push(contours.get(contSizes[c][1]));
-	    		hierSorted.push(tempHier[c]);
-	    	}
-	    }
-
-        // Determine which of the contours are cards by applying the
-    	// following criteria: 1) Smaller area than the maximum card size,
-    	// 2), bigger area than the minimum card size, 3) have no parents,
-    	// and 4) have four corners
-    	for(let k=0; k < constSorted.length; k++) {
-    		let contour = constSorted[k];
-    		let size = cv.contourArea(contour);
-            let peri = cv.arcLength(contour,true);
-            let approx = new cv.Mat();
-            cv.approxPolyDP(contour, approx, 0.01*peri, true);
-
-            if((size < CARD_MAX_AREA) && (size > CARD_MIN_AREA) &&
-               (hierSorted[k][3] === -1) && (approx.length)) {
-            	contIsCard.push(1);
-            } else {
-            	contIsCard.push(0);
-            }
-    	}
-    	return [constSorted, contIsCard];
-
-	} else {
-		return [[], []];
+	// divide by 4 to create multiple arrays, each for one contour
+	let tempHier = [];
+	for(let j=0; j < hierarchy.data32S.length; j += 4) {
+		tempHier.push(hierarchy.data32S.slice(j, j+4));
 	}
 
+	// Fill empty lists with sorted contour and sorted hierarchy. Now,
+    // the indices of the contour list still correspond with those of
+    // the hierarchy list. The hierarchy array can be used to check if
+    // the contours have parents or not.
+    if (contSizes != []) {
+	    for (c in contSizes) {
+    		constSorted.push(contours.get(contSizes[c][1]));
+    		hierSorted.push(tempHier[c]);
+    	}
+    }
+
+    // Determine which of the contours are cards by applying the
+	// following criteria: 1) Smaller area than the maximum card size,
+	// 2), bigger area than the minimum card size, 3) have no parents,
+	// and 4) have four corners
+	for(let k=0; k < constSorted.length; k++) {
+		let contour = constSorted[k];
+		let size = cv.contourArea(contour);
+        let peri = cv.arcLength(contour,true);
+        let approx = new cv.Mat();
+        cv.approxPolyDP(contour, approx, 0.01*peri, true);
+        // console.log(approx.data32S.length);
+        if((size < CARD_MAX_AREA) && (size > CARD_MIN_AREA) &&
+           (hierSorted[k][3] === -1) && (approx.data32S.length === 8)) {
+        	contIsCard.push(1);
+        } else {
+        	contIsCard.push(0);
+        }
+	}
+	return [constSorted, contIsCard];
 }
 
 function sortFunction(a, b) {

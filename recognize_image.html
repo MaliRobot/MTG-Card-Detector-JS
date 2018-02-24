@@ -19,6 +19,7 @@
             // Define font to use
             let font = cv.FONT_HERSHEY_SIMPLEX;
 
+            // Load the train rank images
             let trainRanks = loadRanks();
 
             let video = document.getElementById("videoInput"); 
@@ -35,8 +36,13 @@
             let dst = new cv.Mat(video.height, video.width, cv.CV_8UC4);
             let cap = new cv.VideoCapture(video);
             
+            // ---- MAIN LOOP ---- 
+            // The main loop repeatedly grabs frames from the video stream
+            // and processes them to find and identify playing cards.
             function processVideo() {
+                // Begin capturing frames
                 let begin = Date.now();
+                // Grab frame from video stream
                 cap.read(src);
 
                 // Pre-process camera image (gray, blur, and threshold it)
@@ -60,8 +66,9 @@
                             // determines the cards properties (corner points, etc). It generates a
                             // flattened 200x300 image of the card, and isolates the card's
                             // suit and rank from the image.
+                            // *******************************************
                             cards.push(preprocessCard(cnt[c], src));
-console.log(k);
+// console.log(k);
                             // Find the best rank and suit match for the card.
                             // let [cards[k].best_rank_match, cards[k].rank_diff] = match_card(cards[k], trainRanks);
 
