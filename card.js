@@ -2,6 +2,9 @@
 const IM_WIDTH = 800;
 const IM_HEIGHT = 600; 
 
+const RANK_WIDTH = 400;
+const RANK_HEIGHT = 580;
+
 const BKG_THRESH = 60;
 
 const RANK_DIFF_MAX = 200000;
@@ -104,12 +107,19 @@ function preprocessCard(contour, image) {
 
     // Initialize new Query_card object
     let qCard = new QueryCard();
+    console.log(contour);
     qCard.contour = contour;
 
     // Find perimeter of card and use it to approximate corner points
+    let approx = new cv.Mat();
     let peri = cv.arcLength(contour, true);
-    let approx = cv.approxPolyDP(contour, 0.01*peri, true);
-    let pts = approx.data32S;
+    cv.approxPolyDP(contour, approx, 0.01*peri, true);
+
+    let pts = [];
+    for(let i = 0; i < approx.data32S.length; i += 2) {
+        pts.push([[approx.data32S[i], approx.data32S[i+1]]]);
+    }
+
     qCard.corner_pts = pts;
 
     // Find width and height of card's bounding rectangle
@@ -120,21 +130,21 @@ function preprocessCard(contour, image) {
     // Find center point of card by taking x and y average of the four corners.
     let centX = 0;
     let centY = 0;
-    for(let i=0; i < pts.data32S.length - 1; i += 2) {
-    	centX += pts.data32S[i];
-    	centY += pts.data32S[i+1];
+    for(let i=0; i < pts.length - 1; i += 2) {
+    	centX += pts[i];
+    	centY += pts[i+1];
     }
     centX = Math.round(centX / pts.cols);
     centY = Math.round(centY / pts.cols);
     qCard.center = [centX, centY];
 
     // Warp card into 200x300 flattened image using perspective transform
-    qCard.warp = flattener(image, approx, rect.width, rect.height);
+    qCard.warp = flattener(image, pts, rect.width, rect.height);
 
     // Find rank contour and bounding rectangle, isolate and find largest contour
     let contours = new cv.MatVector();
     let hierarchy = new cv.Mat();
-    cv.findContours(qCard.warp, contours, hierarchy, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE);
+    cv.findContours(qCard.warp, contours, hierarchy, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE);
 
     var largestContour = null;
 	var largestArea = 0;
@@ -153,7 +163,8 @@ function preprocessCard(contour, image) {
     	let rect = cv.boundingRect(largestContour);
     	let r = new cv.Rect(rect.x, rect.y, rect.x+rect.width, rect.y+rect.height);
     	let qCardRoi = qCard.warp.roi(r); 
-    	let qCardSized = cv.resize(qCardRoi, [RANK_WIDTH, RANK_HEIGHT], 0, 0);
+        let qCardSized = new cv.Mat();
+    	cv.resize(qCardRoi, qCardSized, new cv.Size(RANK_WIDTH, RANK_HEIGHT), 0, 0);
         qCard.rankImg = qCardSized;
     }
 
@@ -275,7 +286,7 @@ function findCards(image) {
         let peri = cv.arcLength(contour,true);
         let approx = new cv.Mat();
         cv.approxPolyDP(contour, approx, 0.01*peri, true);
-        // console.log(approx.data32S.length);
+
         if((size < CARD_MAX_AREA) && (size > CARD_MIN_AREA) &&
            (hierSorted[k][3] === -1) && (approx.data32S.length === 8)) {
         	contIsCard.push(1);
