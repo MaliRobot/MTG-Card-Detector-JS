@@ -16,9 +16,6 @@
 
             const FPS = 30;
 
-            // Define font to use
-            let font = cv.FONT_HERSHEY_SIMPLEX;
-
             // Load the train rank images
             let trainRanks = loadRanks();
 
@@ -66,26 +63,28 @@
                             // determines the cards properties (corner points, etc). It generates a
                             // flattened 200x300 image of the card, and isolates the card's
                             // suit and rank from the image.
-                            // *******************************************
                             cards.push(preprocessCard(cnt[c], src));
-// console.log(k);
+                            // *******************************************
+                            console.log(k);
                             // Find the best rank and suit match for the card.
-                            // let [cards[k].best_rank_match, cards[k].rank_diff] = match_card(cards[k], trainRanks);
+                            let matched = matchCard(cards[k], trainRanks);
+                            cards[k].bestMatch = matched[0];
+                            cards[k].rankDiff = matched[1];
 
-                            // // Draw center point and match result on the image.
-                            // let image = drawResults(src, cards[k]);
-                            // k++;
+                            // // // Draw center point and match result on the image.
+                            let image = drawResults(src, cards[k]);
+                            k++;
                         }
                     } 
                     // Draw card contours on image (have to do contours all at once or
                     // they do not show up properly for some reason)
-                    // if (cards.length != 0) {
-                    //     let tempCnts = [];
-                    //     for (n in cards) {
-                    //         tempCnts.push(cards[n].contour);
-                    //     }
-                    //     cv.drawResults(src, tempCnts, -1, [255, 0, 0], 2);
-                    // }
+                    if (cards.length > 0) {
+                        let tempCnts = [];
+                        for (n in cards) {
+                            tempCnts.push(cards[n].contour);
+                        }
+                        cv.drawContours(src, tempCnts, -1, new cv.Scalar(255, 0, 0), 2, cv.LINE_8);
+                    }
                 }
 
                 cv.imshow('canvasOutput', thresh);

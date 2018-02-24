@@ -107,7 +107,6 @@ function preprocessCard(contour, image) {
 
     // Initialize new Query_card object
     let qCard = new QueryCard();
-    console.log(contour);
     qCard.contour = contour;
 
     // Find perimeter of card and use it to approximate corner points
@@ -120,7 +119,7 @@ function preprocessCard(contour, image) {
         pts.push([[approx.data32S[i], approx.data32S[i+1]]]);
     }
 
-    qCard.corner_pts = pts;
+    qCard.cornerPts = pts;
 
     // Find width and height of card's bounding rectangle
     let rect = cv.boundingRect(contour);
@@ -131,11 +130,11 @@ function preprocessCard(contour, image) {
     let centX = 0;
     let centY = 0;
     for(let i=0; i < pts.length - 1; i += 2) {
-    	centX += pts[i];
-    	centY += pts[i+1];
+    	centX += pts[i][0][0];
+    	centY += pts[i+1][0][1];
     }
-    centX = Math.round(centX / pts.cols);
-    centY = Math.round(centY / pts.cols);
+    centX = Math.round(centX / pts.length);
+    centY = Math.round(centY / pts.length);
     qCard.center = [centX, centY];
 
     // Warp card into 200x300 flattened image using perspective transform
@@ -167,7 +166,6 @@ function preprocessCard(contour, image) {
     	cv.resize(qCardRoi, qCardSized, new cv.Size(RANK_WIDTH, RANK_HEIGHT), 0, 0);
         qCard.rankImg = qCardSized;
     }
-
     return qCard;
 }
 
@@ -183,7 +181,7 @@ function matchCard(qCard, trainRanks) {
     // If no contours were found in query card in preprocess_card function,
     // the img size is zero, so skip the differencing process
     // (card will be left as Unknown)
-    if (qCard.rank_img.length != 0) {
+    if (qCard.rankImg.length > 0) {
         // Difference the query card rank image from each of the train rank images,
         // and store the result with the least difference
         for (trank in trainRanks) {
@@ -218,13 +216,16 @@ function drawResults(image, qCard) {
 
     let x = qCard.center[0];
     let y = qCard.center[1];
-    cv.circle(image,(x,y),5,[255,0,0],-1);
+    cv.circle(image, new cv.Point(x,y),5, new cv.Scalar(255,0,0),-1);
 
-    let rankName = qCard.best_rank_match;
+    let rankName = qCard.bestMatch;
+
+    // Define font to use
+    let font = cv.FONT_HERSHEY_SIMPLEX;
 
     // Draw card name twice, so letters have black outline
-    cv.putText(image, [rank_name], [x-60,y-10], font, 1, [0,0,0], 3, cv.LINE_AA);
-    cv.putText(image, [rank_name], [x-60,y-10], font, 1, [50,200,200], 2, cv.LINE_AA);
+    // cv.putText(image, [rankName], new cv.Point(x-60,y-10), font, 1, new cv.Scalar(0,0,0), 3, cv.LINE_AA);
+    // cv.putText(image, [rankName], new cv.Point(x-60,y-10), font, 1, new cv.Scalar(50,200,200), 2, cv.LINE_AA);
     
     // Can draw difference value for troubleshooting purposes
     // (commented out during normal operation)
