@@ -6,8 +6,18 @@
         <script src="card.js" type="text/javascript"></script>
     </head>
     <body>
+        <div><p id="time"></p></div>
+        <div id="message"><h2>Camera is not ready. Stand by.</h2></div>
         <video id="videoInput" width="800" height="600"></video>
         <canvas id="canvasOutput"></canvas>
+        <div>
+            <p>capture image:</p>
+            <p>- run from https</p> 
+            <p>- place the card on the white background such as sheet of paper</p>
+            <p>- once the camera is ready point it towards the card, try to catch only the card and white background, nothing else</p>
+            <p>- when the program captures the image of the card it will appear next to the video feed</p>
+            <p>- now you can save the image (use right click and "save as ..." for now)</p>
+        </div>
         <script type="text/javascript">
             function onOpenCvReady() {
                 const RANK_WIDTH = 400;
@@ -23,7 +33,7 @@
                 const FPS = 30;
 
                 let video = document.getElementById("videoInput"); 
-                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                navigator.mediaDevices.getUserMedia({ video:  { facingMode: "environment" }, audio: false })
                     .then(function(stream) {
                         video.srcObject = stream;
                         video.play();
@@ -37,6 +47,18 @@
 
                 function processVideo() {
                     let begin = Date.now();
+                    document.getElementById("time").innerHTML = new Date().toTimeString().slice(0,8);
+
+                    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                    .then(function(stream) {
+                        /* use the stream */
+                        document.getElementById("message").innerHTML = "Camera is ready. Point it towards image";
+                    })
+                    .catch(function(err) {
+                        /* handle the error */
+                        console.log(err);
+                    });
+
                     cap.read(src);
 
                     let thresh = preprocessImage(src);
@@ -79,11 +101,18 @@
                         if(contours.get(0)) {
                             let rectCnt = cv.boundingRect(contours.get(0));
                             try {
-                              let final_img = new cv.Mat();
-                              let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
-                              let roi = warp.roi(r);
-                              cv.resize(roi, final_img, new cv.Size(RANK_WIDTH, RANK_HEIGHT), 0, 0);
-                              cv.imshow('canvasOutput', final_img);
+                                let final_img = new cv.Mat();
+                                let r = new cv.Rect(rectCnt.x, rectCnt.y, rectCnt.x+rectCnt.width, rectCnt.y+rectCnt.height);
+                                let roi = warp.roi(r);
+                                cv.resize(roi, final_img, new cv.Size(RANK_WIDTH, RANK_HEIGHT), 0, 0);
+                                cv.imshow('canvasOutput', final_img);
+
+                                if(final_img) {
+                                    document.getElementById("message").innerHTML = "Got the image!"
+                                } else {
+                                    document.getElementById("message").innerHTML = "Keep trying!"
+                                }
+
                             } catch(err) {
                               console.log(err);
                             }

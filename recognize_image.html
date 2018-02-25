@@ -6,8 +6,16 @@
         <script src="card.js" type="text/javascript"></script>
     </head>
     <body>
+        <div><h2 id="time"></h2><h2 id="message">Camera is not ready. Stand by.</h2></div>
         <video id="videoInput" width="800" height="600"></video>
         <canvas id="canvasOutput"></canvas>
+        <div>
+            <p>capture image:</p>
+            <p>- run from https</p> 
+            <p>- place the card on the white background such as sheet of paper</p>
+            <p>- once the camera is ready point it towards the card, try to catch only the card and white background, nothing else</p>
+            <p>- keep your camera steady as the progam tries the identify the card, the name of the closes match is shown on the right image, on the top of the card.</p>
+        </div>
         <div id=collection></div>
         <script type="text/javascript">
         function onOpenCvReady() {
@@ -24,7 +32,7 @@
             let trainRanks = loadRanks();
 
             let video = document.getElementById("videoInput"); 
-            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
                 .then(function(stream) {
                     video.srcObject = stream;
                     video.play();
@@ -43,6 +51,18 @@
             function processVideo() {
                 // Begin capturing frames
                 let begin = Date.now();
+                document.getElementById("time").innerHTML = new Date().toTimeString().slice(0,8);
+
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    /* use the stream */
+                    document.getElementById("message").innerHTML = "Camera is ready. Point it towards image";
+                })
+                .catch(function(err) {
+                    /* handle the error */
+                    console.log(err);
+                });
+
                 // Grab frame from video stream
                 cap.read(src);
 
@@ -51,6 +71,13 @@
 
                 // Find and sort the contours of all cards in the image (query cards)
                 let [cnt, isCard] = findCards(thresh);
+
+                if(navigator.getUserMedia){
+                 //Webcam is Available
+                 //Do your stuffs
+                }else{
+                 //Webcam is not available
+                }
 
                 // If there are no contours, do nothing
                 if (cnt.length > 0) {
@@ -74,9 +101,17 @@
                             cards[k].bestMatch = matched[0];
                             cards[k].rankDiff = matched[1];
                             console.log(matched[0], matched[1]);
+                            
                             // // // Draw center point and match result on the image.
                             let image = drawResults(src, cards[k]);
-                                            cv.imshow('canvasOutput', image);
+
+                            if(image) {
+                                document.getElementById("message").innerHTML = "Got the image!"
+                            } else {
+                                document.getElementById("message").innerHTML = "Keep trying!"
+                            }
+
+                            cv.imshow('canvasOutput', image);
                             k++;
                         }
                     } 
