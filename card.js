@@ -40,7 +40,7 @@ function loadRanks(filepath = 'train_ranks/') {
 	// Loads rank images from directory specified by filepath. Stores
     // them in a list of Train_ranks objects.
 
-    let trainRanks = [];
+    var trainRanks = [];
     let i = 0;
 
     let cardNames = ['reito_lantern','ornate_kanzashi', 'free_from_the_real', 
@@ -58,17 +58,21 @@ function loadRanks(filepath = 'train_ranks/') {
               'descendant_of_soramaro', 'wandering_ones', 'orochi_sustainer', 'field_of_reality'];
 
     for (card in cardNames) {
-    	trainRanks.push(new TrainRanks());
-    	trainRanks[i].name = cardNames[card];
+        let newRank = new TrainRanks();
+    	newRank.name = cardNames[card];
     	let filename = cardNames[card] + '.jpg';
     	let fullpath = filepath + filename;
     	let collection = document.getElementById('collection');
     	collection.innerHTML += '<img id="' + filename + '" src="' + fullpath + '"/>';
-    	collection.onload = function() {
-			trainRanks[card].img = cv.imread(filename, cv.IMREAD_GRAYSCALE);
-    	}
+        let imgElement = document.getElementById(filename);
+        imgElement.onload = function() {
+            newRank.img = cv.imread(imgElement, cv.IMREAD_GRAYSCALE);
+        }
+        trainRanks.push(newRank);
     	i++;
     }
+    console.log(trainRanks);
+    return trainRanks;
 }
 
 function preprocessImage(image, white = false) {
@@ -177,18 +181,18 @@ function matchCard(qCard, trainRanks) {
     let bestRankMatchDiff = 3000000;
     let bestRankMatchName = "Unknown";
     let bestRankName = null;
-
+// console.log(qCard.rankImg.data);
     // If no contours were found in query card in preprocess_card function,
     // the img size is zero, so skip the differencing process
     // (card will be left as Unknown)
-    if (qCard.rankImg.length > 0) {
+    if (qCard.rankImg.data !== undefined) {
         // Difference the query card rank image from each of the train rank images,
         // and store the result with the least difference
         for (trank in trainRanks) {
-        	if (trank.img === null) {
+        	if (trainRanks[trank].img === null) {
         		continue;
         	}
-
+            console.log(qCard.rankImg, trainRanks[trank].img);
         	let diffImg = cv.absdiff(qCard.rankImg, trank.img);
 
         	let rankDiff = Math.round((diffImg.data32S.reduce((a, b) => a + b, 0)) / 255);

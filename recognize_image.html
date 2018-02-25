@@ -16,6 +16,10 @@
 
             const FPS = 30;
 
+            //code before the pause
+            setTimeout(function(){
+                //do what you need here
+            }, 10000);
             // Load the train rank images
             let trainRanks = loadRanks();
 
@@ -65,12 +69,12 @@
                             // suit and rank from the image.
                             cards.push(preprocessCard(cnt[c], src));
                             // *******************************************
-                            console.log(k);
+                            // console.log(k);
                             // Find the best rank and suit match for the card.
                             let matched = matchCard(cards[k], trainRanks);
                             cards[k].bestMatch = matched[0];
                             cards[k].rankDiff = matched[1];
-
+                            // console.log(matched[0], matched[1]);
                             // // // Draw center point and match result on the image.
                             let image = drawResults(src, cards[k]);
                             k++;
@@ -83,7 +87,7 @@
                         for (n in cards) {
                             tempCnts.push(cards[n].contour);
                         }
-                        cv.drawContours(src, tempCnts, -1, new cv.Scalar(255, 0, 0), 2, cv.LINE_8);
+                        // cv.drawContours(src, tempCnts, -1, new cv.Scalar(255, 0, 0), 2, cv.LINE_8);
                     }
                 }
 
