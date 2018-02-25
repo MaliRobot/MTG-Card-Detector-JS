@@ -192,14 +192,15 @@ function matchCard(qCard, trainRanks) {
         	if (trainRanks[trank].img === null) {
         		continue;
         	}
-            console.log(qCard.rankImg, trainRanks[trank].img);
-        	let diffImg = cv.absdiff(qCard.rankImg, trank.img);
-
-        	let rankDiff = Math.round((diffImg.data32S.reduce((a, b) => a + b, 0)) / 255);
+        	let diffImg = new cv.Mat();
+            let singleChn = new cv.Mat();
+            cv.cvtColor(trainRanks[trank].img, singleChn, cv.COLOR_RGBA2GRAY);
+            cv.absdiff(qCard.rankImg, singleChn, diffImg);
+        	let rankDiff = Math.round((diffImg.data.reduce((a, b) => a + b, 0)) / 255);
 
     		if (rankDiff < bestRankMatchDiff) {
     			bestRankMatchDiff = rankDiff;
-    			bestRankName = trank.name;
+    			bestRankName = trainRanks[trank].name;
     		}
         }
     }
@@ -223,13 +224,13 @@ function drawResults(image, qCard) {
     cv.circle(image, new cv.Point(x,y),5, new cv.Scalar(255,0,0),-1);
 
     let rankName = qCard.bestMatch;
-
+    console.log(rankName);
     // Define font to use
     let font = cv.FONT_HERSHEY_SIMPLEX;
 
     // Draw card name twice, so letters have black outline
-    // cv.putText(image, [rankName], new cv.Point(x-60,y-10), font, 1, new cv.Scalar(0,0,0), 3, cv.LINE_AA);
-    // cv.putText(image, [rankName], new cv.Point(x-60,y-10), font, 1, new cv.Scalar(50,200,200), 2, cv.LINE_AA);
+    cv.putText(image, rankName, new cv.Point(x-60,y-10), font, 1, new cv.Scalar(0,0,0), 3, cv.LINE_AA);
+    cv.putText(image, rankName, new cv.Point(x-60,y-10), font, 1, new cv.Scalar(50,200,200), 2, cv.LINE_AA);
     
     // Can draw difference value for troubleshooting purposes
     // (commented out during normal operation)

@@ -68,15 +68,15 @@
                             // flattened 200x300 image of the card, and isolates the card's
                             // suit and rank from the image.
                             cards.push(preprocessCard(cnt[c], src));
-                            // *******************************************
-                            // console.log(k);
+
                             // Find the best rank and suit match for the card.
                             let matched = matchCard(cards[k], trainRanks);
                             cards[k].bestMatch = matched[0];
                             cards[k].rankDiff = matched[1];
-                            // console.log(matched[0], matched[1]);
+                            console.log(matched[0], matched[1]);
                             // // // Draw center point and match result on the image.
                             let image = drawResults(src, cards[k]);
+                                            cv.imshow('canvasOutput', image);
                             k++;
                         }
                     } 
@@ -91,7 +91,7 @@
                     }
                 }
 
-                cv.imshow('canvasOutput', thresh);
+                // cv.imshow('canvasOutput', thresh);
                 // schedule next one.
                 let delay = 1000/FPS - (Date.now() - begin);
                 setTimeout(processVideo, delay);
