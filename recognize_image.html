@@ -24,6 +24,8 @@
 
             const FPS = 30;
 
+            var recent_log = [];
+
             //code before the pause
             setTimeout(function(){
                 //do what you need here
@@ -112,6 +114,7 @@
                             }
 
                             cv.imshow('canvasOutput', image);
+                            onCapture(image);
                             k++;
                         }
                     } 
@@ -132,6 +135,28 @@
                 setTimeout(processVideo, delay);
             }
             setTimeout(processVideo, 0);
+
+
+            function onCapture(image){
+
+                recent_log.push({'image': image, 'datetime': new Date()});
+                // limit to last 10 entries
+                if(recent_log.length === 10) {
+                    recent_log = recent_log.slice(1,);
+                }
+
+                let log_div = $("#log").empty();
+
+                let i = 0;
+                recent_log.forEach(function(log){
+                  i++;
+                  log_div.append("<div>" + log.datetime.toString() + "</div>");
+                  log_div.append('<canvas id="log_img_'+ i +'"></canvas>');
+                  log_div.append("<br>");
+                  cv.imshow('log_img_'+ i, log.image);
+
+                });
+            }
         }
         </script>
         <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
